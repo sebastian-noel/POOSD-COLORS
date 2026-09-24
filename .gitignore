@@ -1,0 +1,11 @@
+# Local SSH keys
+/colors
+/colors.pub
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# macOS metadata
+.DS_Store
