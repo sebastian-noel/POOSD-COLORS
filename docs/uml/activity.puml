@@ -1,0 +1,122 @@
+@startuml
+title COLORS | Activity Diagram: Login and Color Management
+
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 15
+skinparam shadowing false
+skinparam ArrowColor #475569
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #2563EB
+skinparam activityDiamondBackgroundColor #F1F5F9
+skinparam activityDiamondBorderColor #475569
+skinparam partitionBackgroundColor #F8FAFC
+skinparam partitionBorderColor #94A3B8
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #D97706
+
+start
+partition "Log in: index.html, js/code.js, and Login.php" {
+  :User enters username/password\nand clicks the login button;
+  :Browser: doLogin() resets user state;\nPOST {login, password} to /LAMPAPI/Login.php;
+  note right
+    Password is sent as entered.
+    The MD5 calls are commented out.
+  end note
+  :PHP: decode JSON; load /etc/colors/database.php;\nconnect to MySQL using mysqli;
+  if (Connection reports an error?) then (yes)
+    :PHP: return JSON with id = 0\nand the connection error;
+  else (no)
+    :MySQL: SELECT ID, firstName, lastName FROM Users\nWHERE Login = ? AND Password = ?;
+    if (Matching row found?) then (yes)
+      :PHP: return id, firstName, lastName,\nand error = "";
+    else (no)
+      :PHP: return id = 0 and\nerror = "No Records Found";
+    endif
+  endif
+  :Browser: parse response; set userId = response.id;
+  if (userId < 1?) then (yes)
+    :Display "User/Password combination incorrect";\nremain on index.html;
+    stop
+  else (no)
+    :Set firstName and lastName;\nsaveCookie() with a 20-minute expiry;\nnavigate to color.html;
+  endif
+}
+
+partition "Color page: color.html and js/code.js" {
+  :Browser: on DOMContentLoaded, readCookie();\nstart with userId = -1 and parse cookie values;
+  if (userId < 0?) then (yes)
+    :Navigate to index.html;
+    stop
+  else (no)
+    :Keep the color page open;
+  endif
+  note right
+    This is a browser-side cookie check.
+    PHP does not validate a session for add/search.
+  end note
+}
+
+while (Color page remains open?) is (yes)
+  :User enters text if needed\nand clicks Add Color, Search Color, or Log Out;
+  switch (Selected action)
+    case (Add Color)
+      partition "Add: addColor() and AddColor.php" {
+        :Browser: POST {color, userId}\nto /LAMPAPI/AddColor.php;
+        :PHP: decode JSON; load configuration;\nconnect to MySQL;
+        if (Connection reports an error?) then (yes)
+          :PHP: return {error: connection error};
+        else (no)
+          :MySQL: INSERT into Colors (UserId, Name)\nVALUES (submitted userId, entered color);
+          :PHP: close statement/connection;\nreturn {error: ""};
+        endif
+        :Browser: on HTTP 200, display\n"Color has been added";
+        note right
+          addColor() does not inspect response.error.
+          A JSON connection error with HTTP 200
+          also produces this success message.
+        end note
+      }
+    case (Search Color)
+      partition "Search: searchColor() and SearchColors.php" {
+        :Browser: POST {search, userId}\nto /LAMPAPI/SearchColors.php;
+        :PHP: decode JSON; load configuration;\nconnect to MySQL;
+        if (Connection reports an error?) then (yes)
+          :PHP: return error JSON\nwithout a results field;
+        else (no)
+          :PHP: bind pattern = '%' . search . '%'\nand submitted userId;\nMySQL: SELECT Name FROM Colors\nWHERE Name LIKE ? AND UserID = ?;
+          if (One or more rows found?) then (yes)
+            :PHP: return {results: [names], error: ""};
+          else (no)
+            :PHP: return error = "No Records Found"\nwithout a results field;
+          endif
+          :PHP: close statement/connection;
+        endif
+        :Browser: on HTTP 200, set retrieval status\nand parse the JSON response;
+        if (Response contains a results array?) then (yes)
+          :Browser: join names with line breaks;\nreplace the first paragraph's contents;
+        else (no)
+          :Browser: results.length throws TypeError;\nprevious list contents remain;
+        endif
+        note right
+          The code has no results-array guard.
+          This decision shows the actual outcomes.
+          The retrieval status span is hidden by CSS.
+        end note
+      }
+    case (Log Out)
+      partition "Log out: doLogout()" {
+        :Browser: reset userId = 0 and names = "";\nexpire the firstName cookie;\nnavigate to index.html;
+        stop
+      }
+  endswitch
+endwhile (page closed / left)
+stop
+
+legend bottom
+  Request/response paths assume completed HTTP 200 responses.
+  Non-200 responses have no dedicated callback feedback; transport/setup exceptions are omitted.
+  SQL is summarized; the PHP scripts use prepared statements and bound parameters.
+  The loops represent repeated user actions, not a JavaScript polling loop.
+endlegend
+@enduml

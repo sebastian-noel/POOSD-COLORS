@@ -1,0 +1,60 @@
+@startuml
+!pragma layout smetana
+title COLORS | Use Case Diagram
+left to right direction
+
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 16
+skinparam shadowing false
+skinparam roundCorner 12
+skinparam ArrowColor #334155
+skinparam actorBorderColor #334155
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #2563EB
+skinparam rectangleBorderColor #334155
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #D97706
+
+actor User
+
+rectangle "COLORS web application" {
+  usecase "Log in" as Login
+  usecase "Add a color" as Add
+  usecase "Search saved colors" as Search
+  usecase "Log out" as Logout
+}
+
+User -- Login
+User -- Add
+User -- Search
+User -- Logout
+
+note right of Login
+  Enter an existing username and password.
+  A successful login saves a browser cookie
+  and opens color.html.
+end note
+
+note right of Add
+  Save the entered name with the userId
+  supplied by the browser.
+end note
+
+note right of Search
+  Search names using SQL LIKE and the
+  supplied userId; display matching names.
+end note
+
+note right of Logout
+  Clear browser user state, expire the
+  cookie, and return to index.html.
+end note
+
+legend bottom
+  Add, search, and log out are on color.html.
+  The page reads the cookie and redirects if userId < 0.
+  The PHP color endpoints trust the submitted userId.
+  Login is a prerequisite in normal use, not an included call on every action.
+endlegend
+@enduml

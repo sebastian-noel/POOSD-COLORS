@@ -1,0 +1,126 @@
+@startuml
+!pragma layout smetana
+title COLORS | Class Diagram of Implemented Scripts and Data
+top to bottom direction
+
+skinparam backgroundColor white
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 15
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam classAttributeIconSize 0
+skinparam ArrowColor #475569
+skinparam classBackgroundColor #EFF6FF
+skinparam classBorderColor #2563EB
+skinparam packageBackgroundColor #F8FAFC
+skinparam packageBorderColor #94A3B8
+skinparam noteBackgroundColor #FFFBEB
+skinparam noteBorderColor #D97706
+skinparam nodesep 40
+skinparam ranksep 50
+hide empty members
+hide circle
+
+package "Browser frontend" {
+  class "js/code.js" as Client <<script>> {
+    urlBase : string = '/LAMPAPI' {readOnly}
+    extension : string = 'php' {readOnly}
+    userId : number
+    firstName : string
+    lastName : string
+    --
+    doLogin()
+    saveCookie()
+    readCookie()
+    doLogout()
+    addColor()
+    searchColor()
+  }
+
+  class "Document" as BrowserDocument <<browser API>> {
+    cookie : string
+  }
+
+  Client ..> BrowserDocument : reads / writes\ndocument.cookie
+  note left of Client
+    index.html: doLogin() button.
+    color.html: readCookie() on DOM ready;
+    addColor(), searchColor(), doLogout() buttons.
+  end note
+  note right of BrowserDocument
+    One cookie named firstName holds
+    comma-separated firstName, lastName,
+    and userId values; expires in 20 minutes.
+    This is client state, not a PHP session.
+  end note
+}
+
+package "PHP API scripts" {
+  class "LAMPAPI/Login.php" as Login <<script>> {
+    getRequestInfo()
+    sendResultInfoAsJson(obj)
+    returnWithError(err)
+    returnWithInfo(firstName, lastName, id)
+  }
+  class "LAMPAPI/AddColor.php" as Add <<script>> {
+    getRequestInfo()
+    sendResultInfoAsJson(obj)
+    returnWithError(err)
+  }
+  class "LAMPAPI/SearchColors.php" as Search <<script>> {
+    getRequestInfo()
+    sendResultInfoAsJson(obj)
+    returnWithError(err)
+    returnWithInfo(searchResults)
+  }
+}
+
+package "MySQL: COP4331" {
+  class Users <<table>> {
+    ID : int <<PK>>
+    {field} FirstName : VARCHAR(50)
+    {field} LastName : VARCHAR(50)
+    {field} Login : VARCHAR(50)
+    {field} Password : VARCHAR(50)
+  }
+  class Colors <<table>> {
+    ID : int <<PK>>
+    {field} Name : VARCHAR(50)
+    UserID : int
+  }
+  Users "1" -- "0..*" Colors : ID = UserID
+}
+
+class "/etc/colors/database.php" as Config <<configuration>> {
+  host : string
+  username : string
+  password : string
+  database : string
+}
+
+Client ..> Login : doLogin(): POST JSON\n{login, password}
+Client ..> Add : addColor(): POST JSON\n{color, userId}
+Client ..> Search : searchColor(): POST JSON\n{search, userId}
+
+Login ..> Users : mysqli SELECT\nLogin = ? AND Password = ?
+Add ..> Colors : mysqli INSERT\n(UserId, Name)
+Search ..> Colors : mysqli SELECT Name\nName LIKE ? AND UserID = ?
+
+Login ..> Config : require
+Add ..> Config : require
+Search ..> Config : require
+
+note bottom of Users
+  Tables and column types follow README.md setup.
+  Users-to-Colors is the logical ownership relationship.
+  The repository has no DDL proving a foreign-key constraint.
+end note
+
+legend bottom
+  <<script>> boxes group real file-level variables and functions.
+  The application declares no JavaScript or PHP application classes.
+  Dependencies show actual HTTP requests, SQL access, and configuration reads.
+  No inheritance, composition, or server-side session is implemented.
+  Contacts is unused; js/md5.js is loaded on the login page but its login calls are commented out.
+endlegend
+@enduml
