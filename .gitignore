@@ -9,3 +9,9 @@
 
 # macOS metadata
 .DS_Store
+
+# Local development dependencies and lint output
+node_modules/
+npm-debug.log*
+.eslintcache
+.stylelintcache
