@@ -2,7 +2,7 @@
   "name": "poosd-colors",
   "version": "1.0.0",
   "private": true,
-  "description": "Development-only lint tools for the COLORS LAMP application",
+  "description": "Development tools for the COLORS LAMP application",
   "engines": {
     "node": "^24.15.0"
   },
@@ -10,7 +10,10 @@
     "lint": "npm run lint:html && npm run lint:css && npm run lint:js",
     "lint:html": "htmlhint --config .htmlhintrc --ignore \"node_modules/**\" \"**/*.html\"",
     "lint:css": "stylelint \"**/*.css\" --max-warnings 0",
-    "lint:js": "eslint . --max-warnings 0"
+    "lint:js": "eslint . --max-warnings 0",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "node --test tests/frontend.test.mjs",
+    "test:integration": "node --test tests/api.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
