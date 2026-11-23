@@ -1,4 +1,4 @@
-name: Lint
+name: Lint and Test
 
 on:
   push:
@@ -8,8 +8,8 @@ permissions:
   contents: read
 
 jobs:
-  lint:
-    name: HTML, CSS, and JavaScript
+  checks:
+    name: Frontend lint and application tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,3 +35,9 @@ jobs:
 
       - name: Lint JavaScript
         run: npm run lint:js
+
+      - name: Run frontend unit tests
+        run: npm run test:unit
+
+      - name: Run PHP and MySQL integration test
+        run: bash tests/run-integration.sh

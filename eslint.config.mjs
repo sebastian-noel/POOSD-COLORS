@@ -11,6 +11,10 @@ export default defineConfig([
     extends: [js.configs.recommended],
   },
   {
+    files: ["tests/**/*.mjs"],
+    languageOptions: { globals: globals.node },
+  },
+  {
     files: ["js/**/*.js"],
     languageOptions: {
       sourceType: "script",
